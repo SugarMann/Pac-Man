@@ -7,6 +7,7 @@
 
 #include "Game/Player.h"
 #include "Game/Ghost.h"
+#include "GlobalGameDefines.h"
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions
@@ -15,10 +16,7 @@ extern "C" {            // Prevents name mangling of functions
 //----------------------------------------------------------------------------------
 // Game logic
 //----------------------------------------------------------------------------------
-	void playerMovement(Player& player, float speed);
-	void projectilesMovement(std::vector<std::pair<Vector2, float>>& projectiles, float projectileSpeed);
-	void removeProjectiles(std::vector<std::pair<Vector2, float>>& projectiles);
-	void removeProjectile(std::vector<std::pair<Vector2, float>>& projectiles, std::pair<Vector2, float> projectile);
+	void playerLogic(Player& player, Tilemap& tilemap, uint32_t& score, bool& isFrightened);
 
 //----------------------------------------------------------------------------------
 // Remove methods declaration

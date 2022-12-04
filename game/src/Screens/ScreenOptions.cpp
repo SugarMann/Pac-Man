@@ -68,10 +68,10 @@ void InitOptionsScreen(void)
 void UpdateOptionsScreen(void)
 {
 
-    if (IsKeyPressed(KEY_LEFT) && difficulty > 4U)
-        difficulty -= 3U;
-    if (IsKeyPressed(KEY_RIGHT) && difficulty < 10U)
-        difficulty += 3U;
+    if (IsKeyPressed(KEY_LEFT) && difficulty > 0U)
+        difficulty --;
+    if (IsKeyPressed(KEY_RIGHT) && difficulty < 2U)
+        difficulty ++;
 
     if (IsKeyPressed(KEY_O) || IsKeyPressed(KEY_ENTER))
     {
@@ -92,15 +92,15 @@ void DrawOptionsScreen(void)
     // Add text to choose difficulty
     switch (difficulty)
     {
-    case 4: 
+    case 0: 
         stringDifficulty = "\nDIFFICULTY: EASY";
         DrawText(stringDifficulty.c_str(), difPosX, difPosY, 24U, WHITE); 
         break;
-    case 7: 
+    case 1: 
         stringDifficulty = "\nDIFFICULTY: NORMAL";
         DrawText(stringDifficulty.c_str(), difPosX, difPosY, 24U, WHITE); 
         break;
-    case 10: 
+    case 2: 
         stringDifficulty = "\nDIFFICULTY: EXPERT";
         DrawText(stringDifficulty.c_str(), difPosX, difPosY, 24U, WHITE); 
         break;

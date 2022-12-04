@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "raylib.h"
+#include "Game/Player.h"
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions
@@ -14,31 +15,26 @@ extern "C" {            // Prevents name mangling of functions
 class Ghost {
 
 	// Variables
-	Vector2 m_position;
-	Texture2D m_sprite;
-	float m_speed;
-	float m_scale;
 
 public:
 
 	// Public Variables
 	bool m_alive;
-	bool m_rightOrientation;
-	uint8_t m_despawn;
+	uint8_t m_prevMov;
+	int m_x;
+	int m_y;
+	float m_speed;
 
 	// Contructors
 	Ghost();
-	Ghost(const Vector2& position,const float& speed, Texture2D& sprite, bool rightOrientation, float& scale);
+	Ghost(uint16_t x, uint16_t y, float speed);
+
+	// Methods
+	void ghostMovement(Player& player);
 
 	// Getters and Setters
-	void setPosition(const Vector2& position);
 	void setSpeed(const float& speed);
-	void setScale(const float& scale);
-	void setTexture(Texture2D& sprite);
-	Vector2 getPosition() { return m_position; }
 	float getSpeed() { return m_speed; }
-	float getScale() { return m_scale; }
-	Texture2D getTexture() { return m_sprite; }
 
 	//Destructor
 	~Ghost();

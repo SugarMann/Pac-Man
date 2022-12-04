@@ -46,22 +46,26 @@
 static Player player;
 static Ghost ghost;
 
-// Ghost variables
-static float ghostSpeed;
-static float ghostScale;
-
 //Gameplay variables
 static uint16_t framesCounter, infoPosX, infoPosY;
 static uint8_t finishScreen;
 static std::string stringInfo;
+static bool texChoice;
+static int gameplayTimeCount;
+static bool isFrightened;
+static bool flag;
+static int difference;
 
 // Time variables
 static std::chrono::system_clock::time_point start, end;
+std::chrono::duration<double> frightenedTime;
 
 //Textures
 Tilemap tilemap = LoadTilemap("resources/TileMap/tilemap.txt", "resources/TileMap/tilemap_colliders.txt", "resources/TileMap/tilemap_objects.txt");
 Image imTileset = LoadImage("resources/TileMap/tileset.png");
-Texture2D texTileset;
+Image imPlayerTileset = LoadImage("resources/Game/tileset_pacman.png");
+Image imGhostTileset = LoadImage("resources/Game/Enemies.png");
+Texture2D texTileset, texPlayerTileset, texGhostTileset;
 
 //----------------------------------------------------------------------------------
 // Gameplay Screen Functions Definition
@@ -77,13 +81,19 @@ void InitGameplayScreen(void)
     infoPosX = 0U;
     infoPosY = 0U;
     score = 0U;
-
-    ghostSpeed = 1.5f;
-    ghostScale = 0.75f;
-
+    difference = 0U;
+    texChoice = true;
+    gameplayTimeCount = 0.0;
+    isFrightened = false;
+    flag = true;
 
     // Load Textures
 
+    // Player
+    texPlayerTileset = LoadTextureFromImage(imPlayerTileset);
+
+    // Ghost
+    texGhostTileset = LoadTextureFromImage(imGhostTileset);
 
     // Tile map
     texTileset = LoadTextureFromImage(imTileset);
@@ -95,7 +105,8 @@ void InitGameplayScreen(void)
     start = std::chrono::system_clock::now();
 
     // Objects initialization
-    //player = Player(0U, 0U, playerSprite);
+    player = Player(GetScreenWidth() / 2 + 16, GetScreenHeight() / 2 + 176, 1.f + difficulty);
+    ghost = Ghost(GetScreenWidth() / 2, GetScreenHeight() / 2 - 80, 1.f + difficulty);
 
 }
 
@@ -105,16 +116,31 @@ void UpdateGameplayScreen(void)
     //----------------------------------------------------------------------------------
     // Player logic
     //----------------------------------------------------------------------------------
-    playerMovement(player, 1.f);
+    playerLogic(player, tilemap, score, isFrightened);
 
     //----------------------------------------------------------------------------------
     // Ghost logic
     //----------------------------------------------------------------------------------
-    
+    ghostLogic(ghost, player, tilemap, isFrightened);
+
     // Ghost state
-
-    // Ghost movement
-
+    if (isFrightened && flag)
+    {
+        end = std::chrono::system_clock::now();
+        frightenedTime = end - start;
+        flag = false;
+    }
+    else if (isFrightened && !flag) {
+        difference = round(std::chrono::duration<double>(gameplayTime).count()) - round(std::chrono::duration<double>(frightenedTime).count());
+    }
+    
+    if (difference >= 10U) // More than 10 sec. frightened mode expires
+    {
+        isFrightened = false;
+        flag = true;
+        ghost = Ghost(GetScreenWidth() / 2, GetScreenHeight() / 2 - 80, 1.f + difficulty);
+        difference = 0U;
+    }
 
     // Press enter or tap to change to ENDING screen
     if (IsKeyPressed(KEY_Q) || player.m_life == 0U)
@@ -140,6 +166,17 @@ void DrawGameplayScreen(void)
     end = std::chrono::system_clock::now();
     gameplayTime = end - start;
 
+    // Textures are differents in time, to make the game "alive"
+    gameplayTimeCount = round(std::chrono::duration<double>(gameplayTime).count());
+    if (gameplayTimeCount % 2 == 0)
+    {
+        texChoice = false;
+    }
+    else
+    {
+        texChoice = true;
+    }
+
     // Add text about time
     stringInfo = "TIME: " + std::to_string(gameplayTime.count());
     infoPosX = static_cast<uint16_t>(GetScreenWidth() / 2.5f);
@@ -160,18 +197,23 @@ void DrawGameplayScreen(void)
     //----------------------------------------------------------------------------------
     // Ghost
     //----------------------------------------------------------------------------------
+    DrawGhost(ghost, texGhostTileset, texChoice, isFrightened);
 
     //----------------------------------------------------------------------------------
     // Player
     //----------------------------------------------------------------------------------
-    
+    DrawPlayer(player, texPlayerTileset, texChoice);
 }
 
 // Gameplay Screen Unload logic
 void UnloadGameplayScreen(void)
 {
-    UnloadImage(imTileset);
     UnloadTilemap(tilemap);
+    UnloadTexture(texPlayerTileset);
+    UnloadTexture(texGhostTileset);
+    UnloadImage(imPlayerTileset);
+    UnloadImage(imTileset);
+    UnloadImage(imGhostTileset);
 }
 
 // Gameplay Screen should finish?

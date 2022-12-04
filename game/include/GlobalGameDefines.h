@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include <chrono>
 
-#define TILESET_TILES  32
+#define TILESET_TILES  32                   // Size of tiles
+#define PLAYER_COLLISION_PADDING    10      // Player padding to detect collision with walls
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -44,6 +45,32 @@ static Rectangle tilesetRecs[TILESET_TILES] = {
     { 224, 64, 32, 32 }, { 256, 64, 32, 32 },  { 288, 64, 32, 32 }      // 28, 29, 30
 };
 
+static Rectangle playerTilesetRecs[TILESET_TILES] = {
+    { 0, 0, 32, 32 }, { 32, 0, 32, 32 },        // 1, 2
+    { 0, 32, 32, 32 }, { 32, 32, 32, 32 },      // 3, 4
+    { 0, 64, 32, 32 }, { 32, 64, 32, 32 },      // 5, 6
+    { 0, 96, 32, 32 }, { 32, 96, 32, 32 },      // 7, 8
+};
+
+static Rectangle ghostTilesetRecs[TILESET_TILES] = {
+    { 0, 0, 32, 32 }, { 32, 0, 32, 32 },        // 1, 2
+    { 64, 0, 32, 32 }, { 96, 0, 32, 32 },       // 3, 4
+    {128, 0, 32, 32 }, { 160, 0, 32, 32 },      // 5, 6
+    {192, 0, 32, 32 }, {224, 0, 32, 32 },       // 7, 8
+    {256, 0, 32, 32 }, {288, 0, 32, 32 },       // 9, 10
+    {256, 32, 32, 32 }, {288, 32, 32, 32},      // 11, 12
+    {320, 32, 32, 32}, {352, 32, 32, 32}        // 13, 14
+};
+
+static Rectangle playerDeadTilesetRecs[TILESET_TILES] = {
+    { 0, 0, 32, 32 }, { 32, 0, 32, 32 },         // 1, 2
+    { 64, 0, 32, 32 }, { 96, 0, 32, 32 },        // 3, 4
+    { 128, 0, 32, 32 }, { 192, 0, 32, 32 },      // 5, 6
+    { 256, 0, 32, 32 }, { 288, 0, 32, 32 },      // 7, 8
+    { 320, 0, 32, 32 }, { 352, 0, 32, 32 },      // 9, 10
+    { 384, 0, 32, 32 }, { 416, 0, 32, 32 }       // 11, 12
+};
+
 //----------------------------------------------------------------------------------
 // Global Variables Declaration (shared by several modules)
 //----------------------------------------------------------------------------------
@@ -51,11 +78,14 @@ extern GameScreen currentScreen;
 extern Font font;
 extern Music introMusic;
 extern Sound fxCoin;
-extern Sound fxShoot;
+extern Sound fxWaka;
 extern Sound fxGameOver;
-extern Sound fxExplosion;
+extern Sound fxDeath;
+extern Sound fxCherry;
+extern Sound fxEatingGhost;
 
 extern uint32_t score;
+extern uint16_t tileCount;
 extern uint16_t difficulty;
 extern std::chrono::duration<double> gameplayTime;
 

@@ -86,7 +86,7 @@ void DrawEndingScreen(void)
 // Ending Screen Unload logic
 void UnloadEndingScreen(void)
 {
-
+    StopSound(fxGameOver);
 }
 
 // Ending Screen should finish?

@@ -80,11 +80,6 @@ void UpdateTitleScreen(void)
     end = std::chrono::system_clock::now();
     elapsedTime = end - start;
 
-    // Only play intro music one time
-    if(elapsedTime.count() >= 6.75)
-        StopMusicStream(introMusic);
-
-
     // Press enter or tap to change to GAMEPLAY screen
     if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
     {

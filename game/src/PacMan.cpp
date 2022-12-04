@@ -32,11 +32,14 @@ GameScreen currentScreen;
 Font font = { 0 };
 Music introMusic = { 0 };
 Sound fxCoin = { 0 };
-Sound fxShoot = { 0 };
+Sound fxWaka = { 0 };
 Sound fxGameOver = { 0 };
-Sound fxExplosion = { 0 };
+Sound fxDeath = { 0 };
+Sound fxEatingGhost = { 0 };
+Sound fxCherry = { 0 };
 uint32_t score = 0U;
-uint16_t difficulty = 7U;
+uint16_t difficulty = 0U;
+uint16_t tileCount = 0U;
 std::chrono::duration<double> gameplayTime;
 
 //----------------------------------------------------------------------------------
@@ -76,17 +79,21 @@ int main(void)
 
     // Load global data (assets that must be available in all screens, i.e. font)
     font = LoadFont("resources/Font/mecha.png");
-    //introMusic = LoadMusicStream("resources/Paratrooper_intro.ogg");
+    introMusic = LoadMusicStream("resources/Audio/Music/IntroTheme.wav");
     fxCoin = LoadSound("resources/coin.wav");
-    //fxShoot = LoadSound("resources/boop.wav");
-    //fxGameOver = LoadSound("resources/game_over.wav");
-    //fxExplosion = LoadSound("resources/damage.wav");
+    fxWaka = LoadSound("resources/Audio/Sounds/WakaWaka.mp3");
+    fxGameOver = LoadSound("resources/Audio/Music/GameOverTheme.wav");
+    fxDeath = LoadSound("resources/Audio/Sounds/Death.mp3");
+    fxCherry = LoadSound("resources/Audio/Sounds/EatingCherry.mp3");
+    fxEatingGhost = LoadSound("resources/Audio/Sounds/EatingGhost.mp3");
 
     SetMusicVolume(introMusic, 0.7f);
     SetSoundVolume(fxCoin, 0.3f);
-    SetSoundVolume(fxShoot, 0.3f);
+    SetSoundVolume(fxWaka, 0.3f);
     SetSoundVolume(fxGameOver, 0.3f);
-    SetSoundVolume(fxExplosion, 0.3f);
+    SetSoundVolume(fxDeath, 0.3f);
+    SetSoundVolume(fxCherry, 0.3f);
+    SetSoundVolume(fxEatingGhost, 0.3f);
 
     // Setup and init first screen
     currentScreen = LOGO;
@@ -122,9 +129,11 @@ int main(void)
     UnloadFont(font);
     UnloadMusicStream(introMusic);
     UnloadSound(fxCoin);
-    UnloadSound(fxShoot);
+    UnloadSound(fxWaka);
     UnloadSound(fxGameOver);
-    UnloadSound(fxExplosion);
+    UnloadSound(fxDeath);
+    UnloadSound(fxCherry);
+    UnloadSound(fxEatingGhost);
 
     CloseAudioDevice();     // Close audio context
 

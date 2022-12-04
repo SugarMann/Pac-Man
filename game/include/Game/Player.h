@@ -4,6 +4,7 @@
 
 // Includes
 #include <stdint.h>
+#include <string>
 
 #include "raylib.h"
 
@@ -13,22 +14,23 @@ extern "C" {            // Prevents name mangling of functions
 
 class Player {
 
-	// Variables
-	Texture2D m_playerSprite;
+	// Private Variables
 
 public:
 	// Public variables
 	uint8_t m_life;
-	uint16_t m_x;
-	uint16_t m_y;
+	int m_x;
+	int m_y;
+	uint8_t m_prevMov; // 0 - right, 1 - up, 2 - left, 3 - down
+	float m_speed;
+	bool m_alive;
 
 	// Contructors
 	Player();
-	Player(const uint16_t& x, const uint16_t& y, Texture2D& playerSprite);
+	Player(uint16_t x, uint16_t y, float speed);
 
-	// Getters and Setters
-	void setPlayerTexture(Texture2D& playerSprite);
-	Texture2D getPlayerTexture() { return m_playerSprite;  }
+	// Methods
+	void Player::playerMovement();
 
 };
 

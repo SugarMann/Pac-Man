@@ -1,21 +1,270 @@
 
 // Includes
 #include <algorithm>
+#include <string>
 
 #include "raylib.h"
 #include "GameManager.h"
-#include "GlobalGameDefines.h"
 
 //----------------------------------------------------------------------------------
 // Initialization methods definition
 //----------------------------------------------------------------------------------
-void playerMovement(Player& player, float speed)
+void playerLogic(Player& player, Tilemap& tilemap, uint32_t& score, bool& isFrightened)
 {
-    if (IsKeyDown(KEY_DOWN)) player.m_y += speed;
-    else if (IsKeyDown(KEY_UP)) player.m_y -= speed;
+    // Save old positions
+    uint16_t oldPosX = player.m_x;
+    uint16_t oldPosY = player.m_y;
 
-    if (IsKeyDown(KEY_RIGHT)) player.m_x += speed;
-    else if (IsKeyDown(KEY_LEFT)) player.m_x -= speed;
+    // Collision boolean
+    bool isCollision = false;
+
+    switch (player.m_prevMov) {
+    case 0: // Right
+        
+        // Player try to move
+        player.playerMovement();
+
+        if (player.m_prevMov == 2) // Forbidden
+        { 
+            player.m_x = oldPosX;
+            player.m_y = oldPosY;
+            player.m_prevMov = 0U; //Right
+        }
+
+        //Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
+
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                // TODO: Review player padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore player position (undo player position update!) 
+                    player.m_x = oldPosX;
+                    player.m_y = oldPosY;
+                    player.m_prevMov = 0U; //Right
+                    isCollision = true;
+                }
+                // Add score from objects
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 30) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxWaka);
+                }
+                else if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 29) && CheckCollisionRecs(playerCollision, tilemapCollision)) 
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxCherry);
+                    // Ghost goes frigthened
+                    isFrightened = true;
+                }
+            }
+        }
+        break;
+
+    case 1: // Up
+
+        // Player try to move
+        player.playerMovement();
+
+        if (player.m_prevMov == 3) // Forbidden
+        {
+            player.m_x = oldPosX;
+            player.m_y = oldPosY;
+            player.m_prevMov = 1U; // Up
+        }
+
+        //Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
+
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                // TODO: Review player padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore player position (undo player position update!) 
+                    player.m_x = oldPosX;
+                    player.m_y = oldPosY;
+                    player.m_prevMov = 1U; //Up
+                    isCollision = true;
+                }
+                // Add score from objects
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 30) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxWaka);
+                }
+                else if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 29) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxCherry);
+                    // Ghost goes frigthened
+                    isFrightened = true;
+                }
+            }
+        }
+        break;
+
+    case 2: // Left
+        // Player try to move
+        player.playerMovement();
+
+        if (player.m_prevMov == 0) // Forbidden
+        {
+            player.m_x = oldPosX;
+            player.m_y = oldPosY;
+            player.m_prevMov = 2U; // Left
+        }
+
+        //Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
+
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                // TODO: Review player padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore player position (undo player position update!) 
+                    player.m_x = oldPosX;
+                    player.m_y = oldPosY;
+                    player.m_prevMov = 2U; //Left
+                    isCollision = true;
+                }
+                // Add score from objects
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 30) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxWaka);
+                }
+                else if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 29) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxCherry);
+                    // Ghost goes frigthened
+                    isFrightened = true;
+                }
+            }
+        }
+        break;
+
+    case 3: // Down
+        
+        // Player try to move
+        player.playerMovement();
+
+        if (player.m_prevMov == 1) // Forbidden
+        {
+            player.m_x = oldPosX;
+            player.m_y = oldPosY;
+            player.m_prevMov = 0U; // Down
+        }
+
+        //Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
+
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                // TODO: Review player padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore player position (undo player position update!) 
+                    player.m_x = oldPosX;
+                    player.m_y = oldPosY;
+                    player.m_prevMov = 3U; //Down
+                    isCollision = true;
+                }
+                // Add score from objects
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 30) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxWaka);
+                }
+                else if ((tilemap.tiles[y * tilemap.tileCountX + x].object == 29) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // Remove object
+                    tilemap.tiles[y * tilemap.tileCountX + x].object = -1;
+                    // Add the score
+                    score += tilemap.tiles[y * tilemap.tileCountX + x].score;
+                    tilemap.tiles[y * tilemap.tileCountX + x].score = 0U;
+                    PlaySound(fxCherry);
+                    // Ghost goes frigthened
+                    isFrightened = true;
+                }
+            }
+        }
+        break;
+
+    default:
+        
+        // Player try to move
+        player.playerMovement();
+
+        //Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
+
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                // TODO: Review player padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(playerCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore player position (undo player position update!) 
+                    player.m_x = oldPosX;
+                    player.m_y = oldPosY;
+                    player.m_prevMov = 5U; //No movement before
+                    isCollision = true;
+                }
+            }
+        }
+        break;
+    }
 }
 
 // Unload tilemap data from memory
@@ -36,62 +285,4 @@ static void DrawTilemap(Tilemap map, Texture2D tileset)
                 { map.position.x + x * map.tileSize, map.position.y + y * map.tileSize }, WHITE);
         }
     }
-}
-
-void projectilesMovement(std::vector<std::pair<Vector2, float>>& projectiles, float projectileSpeed)
-{
-    for (std::pair<Vector2, float>& projectile : projectiles)
-    {
-        // Movement
-        // converting degrees to radians
-        float x = projectile.second * 3.14159f / 180.f;
-
-        projectile.first.x = projectile.first.x + (projectileSpeed * static_cast<float>(sin(x)));
-        projectile.first.y = projectile.first.y - (projectileSpeed * static_cast<float>(cos(x)));
-    }
-}
-
-void removeProjectiles(std::vector<std::pair<Vector2, float>>& projectiles)
-{
-    // Out of bounds
-    projectiles.erase(
-        std::remove_if(
-            projectiles.begin(),
-            projectiles.end(),
-            [](std::pair<Vector2, float>& pr) -> bool {
-                if (pr.first.x > GetScreenWidth() || pr.first.y < 0)
-                    return true;
-                else if (pr.first.y > GetScreenHeight() || pr.first.y < 0)
-                    return true;
-                else
-                    return false;
-            }
-        ),
-        projectiles.end()
-    );
-}
-
-void removeProjectile(std::vector<std::pair<Vector2, float>>& projectiles, std::pair<Vector2, float> projectile)
-{
-    // Remove one specific projectile
-    for (std::vector<std::pair<Vector2, float>>::iterator iter = projectiles.begin(); iter != projectiles.end(); ++iter)
-    {
-        if (iter->first.x == projectile.first.x && iter->first.y == projectile.first.y)
-        {
-            projectiles.erase(iter);
-            break;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------
-// Remove methods difinition
-//----------------------------------------------------------------------------------
-void removePlayer(Player player)
-{
-
-}
-void removeHelicopter(Ghost helicopter)
-{
-
 }

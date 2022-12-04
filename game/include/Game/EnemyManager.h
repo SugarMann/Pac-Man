@@ -8,6 +8,7 @@
 #include "raylib.h"
 #include "Game/Ghost.h"
 #include "Game/Player.h"
+#include "GlobalGameDefines.h"
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions
@@ -16,9 +17,7 @@ extern "C" {            // Prevents name mangling of functions
 	//----------------------------------------------------------------------------------
 	// Enemy Manager Functions Declaration
 	//----------------------------------------------------------------------------------
-	void createHelicopter(std::vector<Ghost>& helicopters, float& speed, Texture2D& spriteRight, Texture2D& spriteLeft, float& scale);
-	void helicoptersMovement(std::vector<Ghost>& helicopters);
-	void removeHelicopters(std::vector<Ghost>& helicopters, std::vector<std::pair<Vector2, float>>& projectiles, uint32_t& score);
+	void ghostLogic(Ghost& ghost, Player& player, Tilemap& tilemap, bool& isFrightened);
 
 #ifdef __cplusplus
 }

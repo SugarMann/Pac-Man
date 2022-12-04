@@ -9,6 +9,8 @@
 #include <string.h>             // String manipulation functions: strrchr(), strcmp()
 
 #include "GlobalGameDefines.h"
+#include "Game/Player.h"
+#include "Game/Ghost.h"
 
 #ifdef __cplusplus
 extern "C" {            // Prevents name mangling of functions
@@ -18,6 +20,8 @@ extern "C" {            // Prevents name mangling of functions
 	// Draw methods
 	//----------------------------------------------------------------------------------
 	void DrawTilemap(Tilemap map, Texture2D tileset);
+	void DrawPlayer(Player& player, Texture2D tileset, bool texChoice);
+	void DrawGhost(Ghost& ghost, Texture2D tileset, bool texChoice, bool isFrightened);
 	Tilemap LoadTilemap(const char* valuesMap, const char* collidersMap, const char* objectsMap);
 
 	//----------------------------------------------------------------------------------

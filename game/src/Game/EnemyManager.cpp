@@ -12,113 +12,277 @@
 //----------------------------------------------------------------------------------
 // Enemy Manager Functions Definition
 //----------------------------------------------------------------------------------
-void createHelicopter(std::vector<Ghost>& helicopters, float& speed, Texture2D& spriteRight, Texture2D& spriteLeft, float& scale)
+void ghostLogic(Ghost& ghost, Player& player, Tilemap& tilemap, bool& isFrightened)
 {
-	// 50% of possibilities to get the helicopter orientation
-	uint8_t prob = std::rand() % 100U;
+    // Save old positions
+    uint16_t oldPosX = ghost.m_x;
+    uint16_t oldPosY = ghost.m_y;
+    uint16_t prob = 0U;
 
-	if (prob >= 50U) // Right
-	{
-		if (prob >= 75U) // Highest position 
-		{
-			float posX = 0.f - spriteLeft.width * scale;
-			float posY = 50.f;
-			Ghost helicopter(Vector2 {posX, posY}, speed, spriteRight, true, scale);
-			helicopters.push_back(helicopter);
-		}
-		else // Lowest position
-		{
-			float posX = 0.f - spriteLeft.width * scale;
-			float posY = 100.f;
-			Ghost helicopter(Vector2{posX, posY}, speed, spriteRight, true, scale);
-			helicopters.push_back(helicopter);
-		}
-	}
-	else // From left
-	{
-		if (prob <= 25U) // Highest position 
-		{
-			float posX = GetScreenWidth();
-			float posY = 50.f;
-			Ghost helicopter(Vector2{posX, posY}, speed, spriteLeft, false, scale);
-			helicopters.push_back(helicopter);
-		}
-		else // Lowest position
-		{
-			float posX = GetScreenWidth();
-			float posY = 100.f;
-			Ghost helicopter(Vector2{posX, posY}, speed, spriteLeft, false, scale);
-			helicopters.push_back(helicopter);
-		}
-	}
+    if (isFrightened && ghost.m_alive)
+    {
+        // Random movement (Frightened effect)
+        prob = rand() % 100 + 1;
+        if (prob < 25U && tileCount >= 8U)
+        {
+            ghost.m_x++;
+            tileCount = 0U;
+        }
+        else if (prob >= 25U && prob < 50U && tileCount >= 8U)
+        {
+            ghost.m_x--;
+            tileCount = 0U;
+        }
+        else if (prob >= 50U && prob < 75U && tileCount >= 8U)
+        {
+            ghost.m_y++;
+            tileCount = 0U;
+        }
+        else if (prob > 75U && tileCount >= 8U)
+        {
+            ghost.m_y--;
+            tileCount = 0U;
+        }
 
-}
+        // Check if there are somo collisions with the tilemap
+        for (int y = 0; y < tilemap.tileCountY; y++)
+        {
+            for (int x = 0; x < tilemap.tileCountX; x++)
+            {
 
-void helicoptersMovement(std::vector<Ghost>& helicopters)
-{
-	for (Ghost& helicopter : helicopters)
-	{
-		if (helicopter.m_rightOrientation && helicopter.m_alive)
-		{
-			// helicopter only moves on x axis
-			float newPosX = helicopter.getPosition().x + 1.f * helicopter.getSpeed();
-			float newPosY = helicopter.getPosition().y;
-			helicopter.setPosition(Vector2 {newPosX, newPosY});
-		}
-		else if (!helicopter.m_rightOrientation && helicopter.m_alive)
-		{
-			// helicopter only moves on x axis
-			float newPosX = helicopter.getPosition().x - 1.f * helicopter.getSpeed();
-			float newPosY = helicopter.getPosition().y;
-			helicopter.setPosition(Vector2{ newPosX, newPosY });
-		}
-	}
-}
+                Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
 
-void removeHelicopters(std::vector<Ghost>& helicopters, std::vector<std::pair<Vector2, float>>& projectiles, uint32_t& score)
-{
-	// Remove helicopters out of bounds
-	helicopters.erase(
-		std::remove_if(
-			helicopters.begin(),
-			helicopters.end(),
-			[](Ghost& h) -> bool {
-				if (h.m_rightOrientation && h.getPosition().x > GetScreenWidth())
-					return true;
-				else if (!h.m_rightOrientation && h.getPosition().x < (0.f - h.getTexture().width * 0.75f))
-					return true;
-				else if (h.m_despawn == 0U)
-					return true;
-				else
-					return false;
-			}
-		),
-		helicopters.end()
-	);
+                // TODO: Review ghost padding for a better collision with walls
+                if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                {
+                    // There is a collision! Restore ghost position (undo ghost position update!) 
+                    ghost.m_x = oldPosX;
+                    ghost.m_y = oldPosY;
+                    ghost.m_prevMov = 0U; //Right
+                }
+                if (CheckCollisionRecs(ghostCollision, playerCollision) && ghost.m_alive) // Ghost dead
+                {
+                    // There is a collision! Restore ghost position (undo ghost position update!) 
+                    score += 50U;
+                    ghost.m_alive = false;
+                    PlaySound(fxEatingGhost);
+                }
+            }
+        }
+    }
 
-	// Kill helicopters in same positions than projectiles
-	for (Ghost& helicopter : helicopters)
-	{
-		for (std::pair<Vector2, float>& projectile : projectiles)
-		{
-			if (projectile.first.x >= helicopter.getPosition().x && 
-				projectile.first.x <= helicopter.getPosition().x + helicopter.getTexture().width * helicopter.getScale())
-			{
-				if (projectile.first.y >= helicopter.getPosition().y && 
-					projectile.first.y <= helicopter.getPosition().y + helicopter.getTexture().height * helicopter.getScale())
-				{
-					// If the helicopter was alive means player score 10 points and remove THAT bullet
-					if (helicopter.m_alive)
-					{
-						score += 10U;
-						removeProjectile(projectiles, projectile);
-						PlaySound(fxExplosion);
-					}
-					// This helicopter is now dead
-					helicopter.m_alive = false;
-				}
-			}
-		}
-	}
+    else if (!isFrightened && ghost.m_alive)// if ghost is not frightened, normal behaviour
+    {
+        switch (ghost.m_prevMov) {
+        case 0: // Right
+
+            // Player try to move
+            if (tileCount >= 8U) // Update movement
+            {
+                ghost.ghostMovement(player);
+                tileCount = 0U;
+            }  else {
+                ghost.m_x += ghost.m_speed;
+            }
+
+            //Check if there are somo collisions with the tilemap
+            for (int y = 0; y < tilemap.tileCountY; y++)
+            {
+                for (int x = 0; x < tilemap.tileCountX; x++)
+                {
+
+                    Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                    // TODO: Review ghost padding for a better collision with walls
+                    if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        ghost.m_x = oldPosX;
+                        ghost.m_y = oldPosY;
+                        ghost.m_prevMov = 0U; //Right
+                    }
+                    if (CheckCollisionRecs(ghostCollision, playerCollision)) // Player dead
+                    {
+                        // There is a collision! Restore player and ghost position
+                        player.m_life--;
+                        player.m_x = GetScreenWidth() / 2 + 16;
+                        player.m_y = GetScreenHeight() / 2 + 176;
+                        ghost.m_x = GetScreenWidth() / 2;
+                        ghost.m_y = GetScreenHeight() / 2 - 80;
+                        PlaySound(fxDeath);
+                    }
+                }
+            }
+            break;
+
+        case 1: // Up
+
+            // Player try to move
+            if (tileCount >= 8U) // Update movement
+            {
+                ghost.ghostMovement(player);
+                tileCount = 0U;
+            }  else {
+                ghost.m_y -= ghost.m_speed;
+            }
+
+            //Check if there are somo collisions with the tilemap
+            for (int y = 0; y < tilemap.tileCountY; y++)
+            {
+                for (int x = 0; x < tilemap.tileCountX; x++)
+                {
+
+                    Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                    // TODO: Review ghost padding for a better collision with walls
+                    if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        ghost.m_x = oldPosX;
+                        ghost.m_y = oldPosY;
+                        ghost.m_prevMov = 1U; //Up
+                    }
+                    if (CheckCollisionRecs(ghostCollision, playerCollision)) // Player dead
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        player.m_life--;
+                        player.m_x = GetScreenWidth() / 2 + 16;
+                        player.m_y = GetScreenHeight() / 2 + 176;
+                        ghost.m_x = GetScreenWidth() / 2;
+                        ghost.m_y = GetScreenHeight() / 2 - 80;
+                        PlaySound(fxDeath);
+                    }
+                }
+            }
+            break;
+
+        case 2: // Left
+            
+            // Player try to move
+            if (tileCount >= 8U) // Update movement
+            {
+                ghost.ghostMovement(player);
+                tileCount = 0U;
+            }  else {
+                ghost.m_x -= ghost.m_speed;
+            }
+
+            //Check if there are somo collisions with the tilemap
+            for (int y = 0; y < tilemap.tileCountY; y++)
+            {
+                for (int x = 0; x < tilemap.tileCountX; x++)
+                {
+
+                    Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                    // TODO: Review ghost padding for a better collision with walls
+                    if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        ghost.m_x = oldPosX;
+                        ghost.m_y = oldPosY;
+                        ghost.m_prevMov = 2U; //Left
+                    }
+                    if (CheckCollisionRecs(ghostCollision, playerCollision)) // Player dead
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        player.m_life--;
+                        player.m_x = GetScreenWidth() / 2 + 16;
+                        player.m_y = GetScreenHeight() / 2 + 176;
+                        ghost.m_x = GetScreenWidth() / 2;
+                        ghost.m_y = GetScreenHeight() / 2 - 80;
+                        PlaySound(fxDeath);
+                    }
+                }
+            }
+            break;
+
+        case 3: // Down
+
+            // Player try to move
+            if (tileCount >= 8U) // Update movement
+            {
+                ghost.ghostMovement(player);
+                tileCount = 0U;
+            }  else {
+                ghost.m_y += ghost.m_speed;
+            }
+
+            //Check if there are somo collisions with the tilemap
+            for (int y = 0; y < tilemap.tileCountY; y++)
+            {
+                for (int x = 0; x < tilemap.tileCountX; x++)
+                {
+
+                    Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle playerCollision = { player.m_x + PLAYER_COLLISION_PADDING, player.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                    // TODO: Review ghost padding for a better collision with walls
+                    if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        ghost.m_x = oldPosX;
+                        ghost.m_y = oldPosY;
+                        ghost.m_prevMov = 3U; //Down
+                    }
+                    if (CheckCollisionRecs(ghostCollision, playerCollision)) // Player dead
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        player.m_life--;
+                        player.m_x = GetScreenWidth() / 2 + 16;
+                        player.m_y = GetScreenHeight() / 2 + 176;
+                        ghost.m_x = GetScreenWidth() / 2;
+                        ghost.m_y = GetScreenHeight() / 2 - 80;
+                        PlaySound(fxDeath);
+                    }
+                }
+            }
+            break;
+
+        default:
+
+            // Ghost try to move
+            ghost.ghostMovement(player);
+
+            //Check if there are somo collisions with the tilemap
+            for (int y = 0; y < tilemap.tileCountY; y++)
+            {
+                for (int x = 0; x < tilemap.tileCountX; x++)
+                {
+
+                    Rectangle ghostCollision = { ghost.m_x + PLAYER_COLLISION_PADDING, ghost.m_y + PLAYER_COLLISION_PADDING, 32, 32 };
+                    Rectangle tilemapCollision = { tilemap.position.x + x * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.position.y + y * tilemap.tileSize + PLAYER_COLLISION_PADDING, tilemap.tileSize, tilemap.tileSize };
+
+                    // TODO: Review ghost padding for a better collision with walls
+                    if ((tilemap.tiles[y * tilemap.tileCountX + x].collider == 0) && CheckCollisionRecs(ghostCollision, tilemapCollision))
+                    {
+                        // There is a collision! Restore ghost position (undo ghost position update!) 
+                        ghost.m_x = oldPosX;
+                        ghost.m_y = oldPosY;
+                        ghost.m_prevMov = 5U; //No movement before
+                    }
+                }
+            }
+            break;
+        }
+    } 
+
+else if (!ghost.m_alive)
+    {
+        ghost.m_x = oldPosX;
+        ghost.m_y = oldPosY;
+    }
+
+    // Update tile account
+    tileCount++;
 
 }
