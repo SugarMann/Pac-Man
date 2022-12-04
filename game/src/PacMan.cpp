@@ -13,7 +13,12 @@
 ********************************************************************************************/
 
 #include "raylib.h"
-#include "screens.h"    // NOTE: Declares global (extern) variables and screens functions
+#include "Screens/ScreenEnding.h"
+#include "Screens/ScreenGameplay.h"
+#include "Screens/ScreenLogo.h"
+#include "ScreenOptions.h"
+#include "Screens/ScreenTitle.h"
+#include "GlobalGameDefines.h"    // NOTE: Declares global (extern) variables
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
@@ -23,30 +28,36 @@
 // Shared Variables Definition (global)
 // NOTE: Those variables are shared between modules through screens.h
 //----------------------------------------------------------------------------------
-GameScreen currentScreen = 0;
+GameScreen currentScreen;
 Font font = { 0 };
-Music music = { 0 };
+Music introMusic = { 0 };
 Sound fxCoin = { 0 };
+Sound fxShoot = { 0 };
+Sound fxGameOver = { 0 };
+Sound fxExplosion = { 0 };
+uint32_t score = 0U;
+uint16_t difficulty = 7U;
+std::chrono::duration<double> gameplayTime;
 
 //----------------------------------------------------------------------------------
 // Local Variables Definition (local to this module)
 //----------------------------------------------------------------------------------
-static const int screenWidth = 800;
-static const int screenHeight = 450;
+static const int screenWidth = 1000;
+static const int screenHeight = 800;
 
 // Required variables to manage screen transitions (fade-in, fade-out)
 static float transAlpha = 0.0f;
 static bool onTransition = false;
 static bool transFadeOut = false;
-static int transFromScreen = -1;
-static int transToScreen = -1;
+static GameScreen transFromScreen;
+static GameScreen transToScreen;
 
 //----------------------------------------------------------------------------------
 // Local Functions Declaration
 //----------------------------------------------------------------------------------
-static void ChangeToScreen(int screen);     // Change to screen, no transition effect
+static void ChangeToScreen(GameScreen screen);     // Change to screen, no transition effect
 
-static void TransitionToScreen(int screen); // Request transition to next screen
+static void TransitionToScreen(GameScreen screen); // Request transition to next screen
 static void UpdateTransition(void);         // Update transition effect
 static void DrawTransition(void);           // Draw transition effect (full-screen rectangle)
 
@@ -59,17 +70,23 @@ int main(void)
 {
     // Initialization
     //---------------------------------------------------------
-    InitWindow(screenWidth, screenHeight, "raylib game template");
+    InitWindow(screenWidth, screenHeight, "Pac-Man");
 
     InitAudioDevice();      // Initialize audio device
 
     // Load global data (assets that must be available in all screens, i.e. font)
-    font = LoadFont("resources/mecha.png");
-    music = LoadMusicStream("resources/ambient.ogg");
+    font = LoadFont("resources/Font/mecha.png");
+    //introMusic = LoadMusicStream("resources/Paratrooper_intro.ogg");
     fxCoin = LoadSound("resources/coin.wav");
+    //fxShoot = LoadSound("resources/boop.wav");
+    //fxGameOver = LoadSound("resources/game_over.wav");
+    //fxExplosion = LoadSound("resources/damage.wav");
 
-    SetMusicVolume(music, 1.0f);
-    PlayMusicStream(music);
+    SetMusicVolume(introMusic, 0.7f);
+    SetSoundVolume(fxCoin, 0.3f);
+    SetSoundVolume(fxShoot, 0.3f);
+    SetSoundVolume(fxGameOver, 0.3f);
+    SetSoundVolume(fxExplosion, 0.3f);
 
     // Setup and init first screen
     currentScreen = LOGO;
@@ -95,6 +112,7 @@ int main(void)
     {
         case LOGO: UnloadLogoScreen(); break;
         case TITLE: UnloadTitleScreen(); break;
+        case OPTIONS: UnloadOptionsScreen(); break;
         case GAMEPLAY: UnloadGameplayScreen(); break;
         case ENDING: UnloadEndingScreen(); break;
         default: break;
@@ -102,8 +120,11 @@ int main(void)
 
     // Unload global data loaded
     UnloadFont(font);
-    UnloadMusicStream(music);
+    UnloadMusicStream(introMusic);
     UnloadSound(fxCoin);
+    UnloadSound(fxShoot);
+    UnloadSound(fxGameOver);
+    UnloadSound(fxExplosion);
 
     CloseAudioDevice();     // Close audio context
 
@@ -117,13 +138,14 @@ int main(void)
 // Module specific Functions Definition
 //----------------------------------------------------------------------------------
 // Change to next screen, no transition
-static void ChangeToScreen(int screen)
+static void ChangeToScreen(GameScreen screen)
 {
     // Unload current screen
     switch (currentScreen)
     {
         case LOGO: UnloadLogoScreen(); break;
         case TITLE: UnloadTitleScreen(); break;
+        case OPTIONS: UnloadOptionsScreen(); break;
         case GAMEPLAY: UnloadGameplayScreen(); break;
         case ENDING: UnloadEndingScreen(); break;
         default: break;
@@ -134,6 +156,7 @@ static void ChangeToScreen(int screen)
     {
         case LOGO: InitLogoScreen(); break;
         case TITLE: InitTitleScreen(); break;
+        case OPTIONS: InitOptionsScreen(); break;
         case GAMEPLAY: InitGameplayScreen(); break;
         case ENDING: InitEndingScreen(); break;
         default: break;
@@ -143,7 +166,7 @@ static void ChangeToScreen(int screen)
 }
 
 // Request transition to next screen
-static void TransitionToScreen(int screen)
+static void TransitionToScreen(GameScreen screen)
 {
     onTransition = true;
     transFadeOut = false;
@@ -181,6 +204,7 @@ static void UpdateTransition(void)
             {
                 case LOGO: InitLogoScreen(); break;
                 case TITLE: InitTitleScreen(); break;
+                case OPTIONS: InitOptionsScreen(); break;
                 case GAMEPLAY: InitGameplayScreen(); break;
                 case ENDING: InitEndingScreen(); break;
                 default: break;
@@ -201,8 +225,8 @@ static void UpdateTransition(void)
             transAlpha = 0.0f;
             transFadeOut = false;
             onTransition = false;
-            transFromScreen = -1;
-            transToScreen = -1;
+            //transFromScreen = -1;
+            //transToScreen = -1;
         }
     }
 }
@@ -218,7 +242,7 @@ static void UpdateDrawFrame(void)
 {
     // Update
     //----------------------------------------------------------------------------------
-    UpdateMusicStream(music);       // NOTE: Music keeps playing between screens
+    UpdateMusicStream(introMusic);       // NOTE: Music keeps playing between screens
 
     if (!onTransition)
     {
@@ -228,37 +252,44 @@ static void UpdateDrawFrame(void)
             {
                 UpdateLogoScreen();
 
-                if (FinishLogoScreen()) TransitionToScreen(TITLE);
+                if (FinishLogoScreen()) 
+                    TransitionToScreen(TITLE);
 
             } break;
             case TITLE:
             {
                 UpdateTitleScreen();
 
-                if (FinishTitleScreen() == 1) TransitionToScreen(OPTIONS);
-                else if (FinishTitleScreen() == 2) TransitionToScreen(GAMEPLAY);
+                if (FinishTitleScreen() == 1) 
+                    TransitionToScreen(OPTIONS);
+                else if (FinishTitleScreen() == 2) 
+                    TransitionToScreen(GAMEPLAY);
 
             } break;
             case OPTIONS:
             {
                 UpdateOptionsScreen();
 
-                if (FinishOptionsScreen()) TransitionToScreen(TITLE);
+                if (FinishOptionsScreen()) 
+                    TransitionToScreen(TITLE);
 
             } break;
             case GAMEPLAY:
             {
                 UpdateGameplayScreen();
 
-                if (FinishGameplayScreen() == 1) TransitionToScreen(ENDING);
-                //else if (FinishGameplayScreen() == 2) TransitionToScreen(TITLE);
+                if (FinishGameplayScreen() == 1) 
+                    TransitionToScreen(ENDING);
 
             } break;
             case ENDING:
             {
                 UpdateEndingScreen();
 
-                if (FinishEndingScreen() == 1) TransitionToScreen(TITLE);
+                if (FinishEndingScreen() == 1)
+                    TransitionToScreen(TITLE);
+                else if (FinishEndingScreen() == 2)
+                    TransitionToScreen(OPTIONS);
 
             } break;
             default: break;
