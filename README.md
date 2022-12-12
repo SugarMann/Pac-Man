@@ -1,60 +1,50 @@
------------------------------------
+ 
+ .         .                                                  
+8 888888888o      .8.           ,o888888o.                       ,8.       ,8.                   .8.          b.             8 
+8 8888    `88.   .888.         8888     `88.                    ,888.     ,888.                 .888.         888o.          8 
+8 8888     `88  :88888.     ,8 8888       `8.                  .`8888.   .`8888.               :88888.        Y88888o.       8 
+8 8888     ,88 . `88888.    88 8888                           ,8.`8888. ,8.`8888.             . `88888.       .`Y888888o.    8 
+8 8888.   ,88'.8. `88888.   88 8888                          ,8'8.`8888,8^8.`8888.           .8. `88888.      8o. `Y888888o. 8 
+8 888888888P'.8`8. `88888.  88 8888                         ,8' `8.`8888' `8.`8888.         .8`8. `88888.     8`Y8o. `Y88888o8 
+8 8888      .8' `8. `88888. 88 8888                        ,8'   `8.`88'   `8.`8888.       .8' `8. `88888.    8   `Y8o. `Y8888 
+8 8888     .8'   `8. `88888.`8 8888       .8'             ,8'     `8.`'     `8.`8888.     .8'   `8. `88888.   8      `Y8o. `Y8 
+8 8888    .888888888. `88888.  8888     ,88'             ,8'       `8        `8.`8888.   .888888888. `88888.  8         `Y8o.` 
+8 8888   .8'       `8. `88888.  `8888888P'              ,8'         `         `8.`8888. .8'       `8. `88888. 8            `Yo
 
-_DISCLAIMER:_
 
-Welcome to **raylib game template**!
 
-This template provides a base structure to start developing a small raylib game in plain C. The repo is also pre-configured with a default `LICENSE` (zlib/libpng) and a `README.md` (this one) to be properly filled by users. Feel free to change the LICENSE as required.
+# PAC-MAN
 
-All the sections defined by `$(Data to Fill)` are expected to be edited and filled properly. It's recommended to delete this disclaimer message after editing this `README.md` file.
+### Funciones
+A continuación se enumeran una serie de comentarios con funciones añadadidas a los requisitos de la práctica, o aspectos a mejorar:
 
-This template has been created to be used with raylib (www.raylib.com) and it's licensed under an unmodified zlib/libpng license.
+ - Implementación de diferentes niveles de dificultad (fácil, normal y experto). En función del nivel escogido en la pantalla de opciones, la velocidad, tanto de Pac-man como del fantasma, aumenta.
 
-_Copyright (c) 2014-2022 Ramon Santamaria ([@raysan5](https://twitter.com/raysan5))_
+![$(Paratrooper)](resources/Screens//Difficulty.PNG)
+ 
+ - En la pantalla de juego, a mayores de las vidas y la puntuación del jugador, se visualiza el tiempo de partida transcurrido.
 
------------------------------------
+ - Añadidos los datos de puntuación y tiempo de partida en la pantalla de fin de juego.
 
-## $(Game Title)
+- Añadidos sprites que cambian con el tiempo dando sensación de "vida" tanto del fantasma como de Pac-man.
 
-![$(Game Title)](screenshots/screenshot000.png "$(Game Title)")
+- No incluida la animación de la muerte de Pac-man ni los sprites con las vidas, se muestra con número este último.
 
-### Description
+- Aspectos a mejorar: la IA del fantasma no acabo de estar demasiado orgulloso del resultado.
 
-$(Your Game Description)
+### Controles
 
-### Features
-
- - $(Game Feature 01)
- - $(Game Feature 02)
- - $(Game Feature 03)
-
-### Controls
-
-Keyboard:
- - $(Game Control 01)
- - $(Game Control 02)
- - $(Game Control 03)
-
-### Screenshots
-
-_TODO: Show your game to the world, animated GIFs recommended!._
-
-### Developers
-
- - $(Developer 01) - $(Role/Tasks Developed)
- - $(Developer 02) - $(Role/Tasks Developed)
- - $(Developer 03) - $(Role/Tasks Developed)
-
-### Links
-
- - YouTube Gameplay: $(YouTube Link)
- - itch.io Release: $(itch.io Game Page)
- - Steam Release: $(Steam Game Page)
-
-### License
-
-This game sources are licensed under an unmodified zlib/libpng license, which is an OSI-certified, BSD-like license that allows static linking with closed source software. Check [LICENSE](LICENSE) for further details.
-
-$(Additional Licenses)
-
-*Copyright (c) $(Year) $(User Name) ($(User Twitter/GitHub Name))*
+Teclado:
+ - En partida:
+ 	- A ó ← -> Moverse a la izquierda.
+ 	- D ó → -> Moverse a la derecha.
+	- W ó ↑ -> Moverse hacia arriba.
+	- S ó ↓ -> Moverse hacia abajo.
+	- Q -> Perder partida.
+ - En la pantalla de opciones:
+ 	- Flecha izquierda -> Bajar la dificultad en la pantalla de opciones.
+ 	- Flecha derecha -> Subir la dificultad en la pantalla de opciones.
+	- Enter -> Volver al inico.
+ - Generales:
+	- Enter -> Empezar a jugar o click izquierdo.
+ 	- I -> Pantalla de opciones.
